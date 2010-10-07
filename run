@@ -1,0 +1,93 @@
+#!/bin/bash
+#Title      : run
+#Date       : 2010-10-07
+#Author     : "Maria Christakis" <christakismaria@gmail.com>
+
+LocalDir=`pwd`
+PltDir="plts"
+TestDir="tests"
+ResultDir="results"
+TempRes=result.tmp
+PltList="kernel stdlib"
+
+plts ()
+{
+    for plt in $PltList ; do
+        pltfile=$PltDir"/"$plt
+        if test -f $pltfile; then
+            echo "PLT file $pltfile exists."
+        else
+            dialyzer --build_plt --apps $plt --output_plt $pltfile
+        fi
+    done
+}
+
+tests ()
+{
+    pltfiles=$PltDir"/*"
+    testfiles=$TestDir"/*.erl"
+    for t in $testfiles ; do
+        tb=`basename $t .erl`
+        for plt in $pltfiles ; do
+            pltb=`basename $plt`
+            old_res=$ResultDir"/"$tb"_"$pltb
+            new_res=$tb"_"$pltb".new"
+            printf "\nTesting $tb.erl with PLT $pltb\n"
+            if test -f $new_res ; then
+                rm -f $TempRes $new_res
+            fi
+            touch $new_res
+            dialyzer --no_check_plt --quiet --plts $plt -- $t -o $TempRes
+            sort -o $new_res $TempRes
+            rm -f $TempRes
+            if diff -sN $new_res $old_res > /dev/null 2>&1; then
+            # zero return status means no diff
+                rm -f $new_res
+                printf "\nPASSED\n"
+            else
+                printf "\n*** $new_res     $old_res differ!!!\n"
+                diff -sN $new_res $old_res
+            fi
+        done
+        old_res=$ResultDir"/"$tb"_full"
+        new_res=$tb"_full.new"
+        printf "\nTesting $tb.erl with merged PLTs\n"
+        if test -f $new_res ; then
+            rm -f $TempRes $new_res
+        fi
+        touch $new_res
+        dialyzer --no_check_plt --quiet --plts $pltfiles -- $t -o $TempRes
+        sort -o $new_res $TempRes
+        rm -f $TempRes
+        if diff -sN $new_res $old_res > /dev/null 2>&1; then
+            # zero return status means no diff
+            rm -f $new_res
+            printf "\nPASSED\n"
+        else
+            printf "\n*** $new_res     $old_res differ!!!\n"
+            diff -sN $new_res $old_res
+        fi
+    done
+}
+
+clean ()
+{
+    rm -rf $PltDir
+    mkdir $PltDir
+}
+
+if [ -n "$1" ]; then
+    case "$1" in
+	--plts)
+	    plts
+	    exit 0;;
+	--tests)
+	    tests
+	    exit 0;;
+	--clean)
+	    clean
+	    exit 0;;
+	*)
+	    exit 1
+    esac
+fi

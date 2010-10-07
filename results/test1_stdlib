@@ -1,0 +1,3 @@
+
+test1.erl:10: The call dict:to_list([]) does not have an opaque term of type dict() as 1st argument
+test1.erl:9: Function bar/0 has no local return

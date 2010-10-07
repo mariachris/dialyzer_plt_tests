@@ -1,0 +1,5 @@
+
+test1.erl:10: The call dict:to_list([]) does not have an opaque term of type dict() as 1st argument
+test1.erl:5: Function foo/0 has no local return
+test1.erl:7: The call file:list_dir(Dir::{'error',atom()} | {'ok',string()}) will never return since the success typing is (atom() | [any()]) -> any() and the contract is (Name::name()) -> {'ok',[filename()]} | {'error',posix()}
+test1.erl:9: Function bar/0 has no local return
