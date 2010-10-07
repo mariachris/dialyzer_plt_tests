@@ -12,6 +12,11 @@ PltList="kernel stdlib"
 
 plts ()
 {
+    if test -d $PltDir; then
+        echo "PLT directory exists."
+    else
+        mkdir $PltDir
+    fi
     for plt in $PltList ; do
         pltfile=$PltDir"/"$plt
         if test -f $pltfile; then
@@ -73,7 +78,6 @@ tests ()
 clean ()
 {
     rm -rf $PltDir
-    mkdir $PltDir
 }
 
 if [ -n "$1" ]; then
