@@ -5,9 +5,13 @@
 
 LocalDir=`pwd`
 PltDir="plts"
+MergedPltDir="merged_plt"
 TestDir="tests"
 ResultDir="results"
+
+MergedPlt="merged"
 TempRes=result.tmp
+
 PltList="kernel stdlib"
 
 plts ()
@@ -25,6 +29,21 @@ plts ()
             dialyzer --build_plt --apps $plt --output_plt $pltfile
         fi
     done
+    merged_plt
+}
+
+merged_plt ()
+{
+    if test -d $MergedPltDir; then
+        echo "Merged PLT directory exists."
+    else
+        mkdir $MergedPltDir
+    fi
+    if test -f $MergedPltDir"/"$MergedPlt ; then
+        echo "Merged PLT file exists."
+    else
+        dialyzer --build_plt --apps $PltList --output_plt $MergedPltDir"/"$MergedPlt
+    fi
 }
 
 tests ()
@@ -72,12 +91,32 @@ tests ()
             printf "\n*** $new_res     $old_res differ!!!\n"
             diff -sN $new_res $old_res
         fi
+        for plt in $pltfiles ; do
+            pltb=`basename $plt`
+            printf "\nMerging $pltb with merged PLT\n"
+            res=$pltb".res"
+            info=$pltb".info"
+            dialyzer --no_check_plt --quiet --plts $plt $MergedPltDir"/"$MergedPlt > $res
+            sed -i 1,+2d $res
+            dialyzer --no_check_plt --quiet --plt_info --plts $plt -- > $info
+            sed -i 1d $info
+            if diff -sN $res $info > /dev/null 2>&1; then
+            # zero return status means no diff
+                rm -f $res $info
+                printf "\nPASSED\n"
+            else
+                printf "\n*** $res     $info differ!!!\n"
+                diff -sN $res $info
+            fi
+        done
     done
 }
 
 clean ()
 {
+    rm -f *.new *.res *.info
     rm -rf $PltDir
+    rm -rf $MergedPltDir
 }
 
 if [ -n "$1" ]; then
